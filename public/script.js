@@ -44,9 +44,18 @@ function switchTab(tab) {
         .classList.toggle("active", tab === "history");
 }
 
-function goToForm(antall, valuta, type, date, description, attendees, country, id) {
+function goToForm(
+    antall,
+    valuta,
+    type,
+    date,
+    description,
+    attendees,
+    country,
+    id,
+) {
     console.log(type);
-    
+
     if (state.status == "Godkjent") {
         document.getElementsByClassName("header-title")[0].textContent =
             "Godkjent";
@@ -64,7 +73,7 @@ function goToForm(antall, valuta, type, date, description, attendees, country, i
             .getElementById("save-btn")
             .classList.add("header-save-disabled");
         document.getElementById("save-btn").classList.remove("header-save");
-    } else {
+    } else if ((state.status = "New")) {
         document.getElementsByClassName("header-title")[0].textContent =
             "Ny utgift";
         document.getElementsByClassName("amount-label")[0].style.color =
@@ -75,12 +84,14 @@ function goToForm(antall, valuta, type, date, description, attendees, country, i
         document
             .getElementById("submit-btn")
             .classList.remove("submit-btn-disabled");
-        document.getElementById("submit-btn").setAttribute("disabled", "false");
-        document.getElementById("save-btn").setAttribute("disabled", "false");
+        document.getElementById("submit-btn").removeAttribute("disabled");
+        document.getElementById("save-btn").removeAttribute("disabled");
         document
             .getElementById("save-btn")
             .classList.remove("header-save-disabled");
         document.getElementById("save-btn").classList.add("header-save");
+
+        resetAll();
     }
     let antallElement = document.getElementById("amount-input");
     let typeElement = document.getElementById("select-type");
@@ -88,7 +99,6 @@ function goToForm(antall, valuta, type, date, description, attendees, country, i
     let descElement = document.getElementById("input-desc");
     let attenElement = document.getElementById("input-att");
     let countryElement = document.getElementById("select-country");
-
 
     if (!(antall instanceof PointerEvent)) {
         antallElement.value = antall;
@@ -158,9 +168,10 @@ function goBack() {
 switchTab("home");
 
 document.getElementById("btn-new-expense") &&
-    document
-        .getElementById("btn-new-expense")
-        .addEventListener("click", goToForm);
+    document.getElementById("btn-new-expense").addEventListener("click", () => {
+        state.status = "new";
+        goToForm();
+    });
 document.getElementById("back-btn").addEventListener("click", goBack);
 
 /* ══ Form logic ══ */
@@ -183,6 +194,7 @@ const fields = [
         inp: "inp-type",
         val: "val-type",
         get: () => document.getElementById("select-type").value,
+        element: document.getElementById("select-type"),
     },
     {
         id: "date",
@@ -190,6 +202,7 @@ const fields = [
         inp: "inp-date",
         val: "val-date",
         get: () => formatDate(document.getElementById("input-date").value),
+        element: document.getElementById("input-date"),
     },
     {
         id: "desc",
@@ -197,6 +210,7 @@ const fields = [
         inp: "inp-desc",
         val: "val-desc",
         get: () => document.getElementById("input-desc").value.trim(),
+        element: document.getElementById("input-desc"),
     },
     {
         id: "att",
@@ -204,6 +218,7 @@ const fields = [
         inp: "inp-att",
         val: "val-att",
         get: () => document.getElementById("input-att").value.trim(),
+        element: document.getElementById("input-att"),
     },
     {
         id: "country",
@@ -211,6 +226,7 @@ const fields = [
         inp: "inp-country",
         val: "val-country",
         get: () => document.getElementById("select-country").value,
+        element: document.getElementById("select-country"),
     },
     {
         id: "comment",
@@ -218,6 +234,7 @@ const fields = [
         inp: "inp-comment",
         val: "val-comment",
         get: () => document.getElementById("input-comment").value.trim(),
+        element: document.getElementById("input-comment"),
     },
 ];
 
@@ -243,6 +260,19 @@ function applyField(fieldId) {
     document.getElementById(f.row).classList.remove("active");
     document.getElementById(f.row).setAttribute("aria-expanded", "false");
 }
+function resetField(fieldId) {
+    const f = fields.find((x) => x.id === fieldId);
+    const val = f.get();
+    state[fieldId] = val;
+    document.getElementById(f.val).textContent = "";
+    document.getElementById(f.row).classList.remove("has-value");
+    document.getElementById(f.inp).classList.add("open");
+    f.element.value = "";
+    console.log(f.element);
+
+    document.getElementById(f.row).classList.add("active");
+    document.getElementById(f.row).setAttribute("aria-expanded", "true");
+}
 
 function closeAll(except) {
     fields.forEach((f) => {
@@ -252,17 +282,15 @@ function closeAll(except) {
         document.getElementById(f.row).setAttribute("aria-expanded", "false");
     });
 }
+function resetAll() {
+    resetField("type");
+    resetField("date");
+    resetField("desc");
+    resetField("att");
+    resetField("country");
+    closeAll();
+}
 async function loadHistory() {
-    const data = {
-        navn: "Test",
-        antall: "100",
-        valuta: "NOK",
-        dato: "29.05.2026",
-        beskrivelse: "bruno test",
-        deltagere: "meg brur",
-        land: "Norge",
-        type: "Lunsj",
-    };
     let response = await apiCall("/bestillinger/Timur", "GET");
 
     document.getElementById("historikk").innerHTML = "";
@@ -315,7 +343,7 @@ async function loadHistory() {
                 expense.Beskrivelse,
                 expense.Deltagere,
                 expense.Land,
-                expense.id
+                expense.id,
             );
         });
 
@@ -355,7 +383,7 @@ async function loadDrafts() {
         parentDiv.appendChild(rightDiv);
 
         parentDiv.addEventListener("click", () => {
-            state.Status = "";
+            state.status = "Draft";
             goToForm(
                 expense.Antall,
                 expense.Valuta,
@@ -364,7 +392,7 @@ async function loadDrafts() {
                 expense.Beskrivelse,
                 expense.Deltagere,
                 expense.Land,
-                expense.id
+                expense.id,
             );
         });
 
@@ -443,21 +471,47 @@ document
     .addEventListener("click", () => showToast("Draft saved ✓"));
 
 // Submit funkction
-document.getElementById("submit-btn").addEventListener("click", () => {
-    if (!state.amount || parseFloat(state.amount) <= 0) {
-        showToast("Please enter an amount.");
-        return;
+document.getElementById("submit-btn").addEventListener("click", async () => {
+    console.log("function");
+
+    try {
+        if (!state.amount || parseFloat(state.amount) <= 0) {
+            showToast("Please enter an amount.");
+            return;
+        }
+        if (!state.type) {
+            showToast("Expense type is required.");
+            return;
+        }
+        if (!state.date) {
+            showToast("Date is required.");
+            return;
+        }
+        const formatted =
+            String(state.date.getDate()).padStart(2, "0") +
+            "." +
+            String(state.date.getMonth() + 1).padStart(2, "0") +
+            "." +
+             state.date.getFullYear();
+        const data = {
+            navn: "Timur",
+            antall: state.amount,
+            valuta: state.currency,
+            dato: formatted,
+            beskrivelse: state.desc,
+            deltagere: state.att,
+            land: state.country,
+            type: state.type,
+        };
+        let response = await apiCall("/send/soknad", "POST", data);
+        console.log(response);
+
+        showToast("Expense submitted! ✓");
+        setTimeout(() => goBack(), 1200);
+    } catch (error) {
+        console.log(error);
+        showToast("Critical error occured, try again later");
     }
-    if (!state.type) {
-        showToast("Expense type is required.");
-        return;
-    }
-    if (!state.date) {
-        showToast("Date is required.");
-        return;
-    }
-    showToast("Expense submitted! ✓");
-    setTimeout(() => goBack(), 1200);
 });
 
 function showToast(msg) {

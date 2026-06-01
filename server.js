@@ -13,15 +13,15 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 const mysql = require("mysql2");
+const database = process.env.DB;
 // Test database connection
 const connection = mysql.createConnection({
     host: process.env.HOST,
     user: process.env.DBUSER,
     password: process.env.DBPASS,
-    database: process.env.DB,
+    database: database,
 });
-const database = process.env.DB;
-console.log(database);
+console.log("DB: " + database);
 
 app.use(express.static("public"));
 
@@ -41,7 +41,6 @@ app.get("/bestillinger/:id", (req, res) => {
         "SELECT * FROM ??.Soknader WHERE Navn = ? AND status != 'Draft'",
         [database, req.params.id],
         (err, result) => {
-            console.log(result);
             res.status(200).send({
                 data: JSON.parse(JSON.stringify(result)),
                 code: 200,
@@ -55,7 +54,6 @@ app.get("/drafts/:id", (req, res) => {
         "SELECT * FROM ??.Soknader WHERE status != 'Godkjent' AND Navn = ? AND status != 'Venter på godkjenning'",
         [database, req.params.id],
         (err, result) => {
-            console.log(result);
             if (!result) {
                 res.status(200).send({
                     data: null,
