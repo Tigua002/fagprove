@@ -73,7 +73,7 @@ function goToForm(
             .getElementById("save-btn")
             .classList.add("header-save-disabled");
         document.getElementById("save-btn").classList.remove("header-save");
-    } else if ((state.status = "New")) {
+    } else if (state.status == "New") {
         document.getElementsByClassName("header-title")[0].textContent =
             "Ny utgift";
         document.getElementsByClassName("amount-label")[0].style.color =
@@ -92,6 +92,8 @@ function goToForm(
         document.getElementById("save-btn").classList.add("header-save");
 
         resetAll();
+    } else if (state.status == "Venter på godkjenning") {
+
     }
     let antallElement = document.getElementById("amount-input");
     let typeElement = document.getElementById("select-type");
@@ -300,6 +302,35 @@ async function loadHistory() {
     let expenses = response.data.toSorted((a, b) =>
         b.Status.localeCompare(a.Status),
     );
+    // amount of pending items
+    const pending = expenses.filter(
+        (expense) => expense.Status == "Venter på godkjenning",
+    ).length;
+    document.getElementById("sc-pending").textContent = pending;
+    console.log(pending);
+    
+    console.log(expenses);
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    
+
+    // This months expenses
+    const newItems = expenses
+    .filter((expense) => {
+        const [day, month, year] = expense.Dato.split(".");
+        const date = new Date(year, month - 1, day);
+        
+        return date >= startOfMonth;
+    })
+    console.log(newItems);
+    let sum = 0;
+    newItems.forEach(item => {
+        sum += item.Antall
+    })
+    
+    document.getElementById("sc-total").textContent = sum;
+    
     expenses.forEach((expense) => {
         let parentDiv = document.createElement("div");
         let statusDiv = document.createElement("div");
@@ -320,7 +351,7 @@ async function loadHistory() {
         typeDiv.setAttribute("class", "exp-info");
         typeDiv.innerHTML = `
         <div class="exp-status-label">${expense.Status}</div>
-        <div class="exp-name">${expense.Type} TESTER</div>
+        <div class="exp-name">${expense.Type} ${expense.Beskrivelse}</div>
         `;
         rightDiv.setAttribute("class", "exp-right");
         rightDiv.innerHTML = `
@@ -488,11 +519,11 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
             return;
         }
         const formatted =
-            String(state.date.getDate()).padStart(2, "0") +
+            String(new Date(state.date).getDate()).padStart(2, "0") +
             "." +
-            String(state.date.getMonth() + 1).padStart(2, "0") +
+            String(new Date(state.date).getMonth() + 1).padStart(2, "0") +
             "." +
-             state.date.getFullYear();
+            new Date(state.date).getFullYear();
         const data = {
             navn: "Timur",
             antall: state.amount,
@@ -509,7 +540,7 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
         showToast("Expense submitted! ✓");
         setTimeout(() => goBack(), 1200);
     } catch (error) {
-        console.log(error);
+        console.error(error);
         showToast("Critical error occured, try again later");
     }
 });

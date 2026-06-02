@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oversikt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Header -->
+<div class="tab-header">
+  <div class="tab-header-title">Oversikt</div>
+  <div style="display:flex;gap:0.6rem;">
+    <button class="tab-icon-btn" aria-label="Sorter">
+      <svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Search + filter chips -->
+<div class="search-bar">
+  <div class="search-row">
+    <div class="search-inner">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+      <input type="text" id="searchInput" placeholder="Søk på navn, land, type…" />
+    </div>
+  </div>
+  <div class="filter-chips">
+    <div class="chip active" data-filter="all">Alle</div>
+    <div class="chip chip-draft" data-filter="draft"><span class="chip-dot"></span>Utkast</div>
+    <div class="chip chip-sent" data-filter="sent"><span class="chip-dot"></span>Sendt</div>
+    <div class="chip chip-approved" data-filter="approved"><span class="chip-dot"></span>Godkjent</div>
+    <div class="chip chip-denied" data-filter="denied"><span class="chip-dot"></span>Avvist</div>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="summary-row">
+  <div class="sum-card" id="card-total" data-filter="all">
+    <div class="sum-label">Totalt</div>
+    <div class="sum-val" id="sum-total">5</div>
+  </div>
+  <div class="sum-card" id="card-draft"data-filter="Venter på godkjenning">
+    <div class="sum-label">Venter på godkjenning</div>
+    <div class="sum-val" id="sum-draft" style="color:var(--clay)">0</div>
+  </div>
+  <div class="sum-card" id="card-approved" data-filter="Godkjent">
+    <div class="sum-label">Godkjent</div>
+    <div class="sum-val" id="sum-approved" style="color:var(--green)">0</div>
+  </div>
+  <div class="sum-card" id="card-denied" data-filter="Avvist">
+    <div class="sum-label">Avvist</div>
+    <div class="sum-val" id="sum-denied" style="color:var(--red)">0</div>
+  </div>
+</div>
+
+<div class="section-label" id="listLabel">Alle oppføringer</div>
+
+<!-- List -->
+<div class="exp-list" id="expList"></div>
+
+<div class="empty-state" id="emptyState">
+  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+  <p>Ingen oppføringer funnet</p>
+</div>
+
+<!-- Overlay -->
+<div class="panel-overlay" id="overlay"></div>
+
+<!-- Detail panel -->
+<div class="detail-panel" id="detailPanel">
+  <div class="panel-handle"></div>
+  <div class="panel-header">
+    <div class="panel-title" id="panelTitle">—</div>
+    <button class="panel-close" id="panelClose">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <div class="panel-meta">
+    <div class="meta-item">
+      <div class="meta-label">Bruker</div>
+      <div class="meta-val" id="panelBruker">—</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Land</div>
+      <div class="meta-val" id="panelLand">—</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Type</div>
+      <div class="meta-val" id="panelType">—</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Dato</div>
+      <div class="meta-val" id="panelDate">—</div>
+    </div>
+    <div class="meta-item" style="grid-column:1/-1;">
+      <div class="meta-label">Beløp</div>
+      <div class="meta-val" id="panelAmount" style="font-family:'DM Serif Display',serif;font-size:1.1rem;">—</div>
+    </div>
+  </div>
+
+  <div class="panel-people">
+    <div class="people-label">Deltagere</div>
+    <div class="people-row" id="panelPeople"></div>
+  </div>
+
+  <div class="panel-divider"></div>
+
+  <div class="panel-status-section">
+    <div class="panel-status-label">Nåværende status</div>
+    <div class="current-status-row">
+      <div class="current-status-dot" id="panelStatusDot"></div>
+      <div class="current-status-text" id="panelStatusText">—</div>
+    </div>
+    <div class="panel-status-label">Endre status</div>
+    <div class="status-actions">
+      <button class="status-btn btn-approve" id="btnApprove">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Godkjenn
+      </button>
+      <button class="status-btn btn-deny" id="btnDeny">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Avvis
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="overview.js"></script>
+</body>
+</html>

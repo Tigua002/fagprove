@@ -49,6 +49,19 @@ app.get("/bestillinger/:id", (req, res) => {
         },
     );
 });
+app.get("/soknader", (req, res) => {
+    connection.query(
+        "SELECT * FROM ??.Soknader WHERE status != 'Draft'",
+        [database],
+        (err, result) => {
+            res.status(200).send({
+                data: JSON.parse(JSON.stringify(result)),
+                code: 200,
+                message: "Successfully retrieved items",
+            });
+        },
+    );
+});
 app.get("/drafts/:id", (req, res) => {
     connection.query(
         "SELECT * FROM ??.Soknader WHERE status != 'Godkjent' AND Navn = ? AND status != 'Venter på godkjenning'",
@@ -73,7 +86,6 @@ app.get("/drafts/:id", (req, res) => {
 });
 
 app.post("/send/soknad", (req, res) => {
-    console.log(req.body);
     const body = req.body;
 
     const name = body.navn;
@@ -84,15 +96,13 @@ app.post("/send/soknad", (req, res) => {
     const attendees = body.deltagere;
     const country = body.land;
     const type = body.type;
+    let expense;
+    if (body.expense == "Draft"){
+        expense = "Draft"
+    } else {
+        expense = "Venter på godkjenning"
+    }
 
-    // if (status != "Preparing" && status != "Ready" && status != "Delivered") {
-    //     res.status(400).send({
-    //         message: "Bad request: Invalid status",
-    //         code: 400,
-    //     });
-    // } else if (id == null) {
-    //     res.status(400).send({ message: "Bad request: Invalid id", code: 400 });
-    // }
     connection.query(
         "INSERT INTO ??.Soknader (Navn, Beskrivelse, Land, Deltagere, Dato, Type, Antall, Valuta, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
@@ -105,7 +115,36 @@ app.post("/send/soknad", (req, res) => {
             type,
             amount,
             valuta,
-            "Venter på godkjenning",
+            expense,
+        ],
+        (err, result) => {
+            if (err) {
+                console.log(err);
+                return res.status(500).send({
+                    message: "Unknown error occured, please try again later",
+                    code: 500,
+                });
+            }
+            res.status(200).send({
+                message: "Successfully sent request",
+                code: 200,
+            });
+        },
+    );
+});
+app.post("/oppdater/soknad", (req, res) => {
+    console.log(req.body);
+    const body = req.body;
+
+    const id = body.id
+    const status = body.status
+
+    connection.query(
+        "UPDATE ??.Soknader SET Status = ? WHERE ID = ?",
+        [
+            database,
+            status,
+            id
         ],
         (err, result) => {
             if (err) {
