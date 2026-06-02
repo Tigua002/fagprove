@@ -343,8 +343,11 @@ async function loadHistory() {
 
         if (expense.Status == "Godkjent") {
             statusDiv.setAttribute("class", "exp-status-bar approved");
-        } else {
+        } else if (expense.Status == "Venter på godkjenning"){
             statusDiv.setAttribute("class", "exp-status-bar sent");
+        } else {
+            statusDiv.setAttribute("class", "exp-status-bar denied");
+
         }
         iconDiv.setAttribute("class", "exp-icon");
         iconDiv.innerHTML = `<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`;

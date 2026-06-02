@@ -250,6 +250,9 @@ body {
 .exp-status-bar.approved {
     background: #3baa6e;
 }
+.exp-status-bar.denied {
+    background: var(--red);
+}
 .exp-status-bar.draft {
     background: var(--clay);
 }
