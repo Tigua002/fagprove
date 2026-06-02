@@ -54,8 +54,8 @@ function goToForm(
     country,
     id,
 ) {
-    console.log(type);
-
+    console.log(state.status);
+    resetAll()
     if (state.status == "Godkjent") {
         document.getElementsByClassName("header-title")[0].textContent =
             "Godkjent";
@@ -73,7 +73,7 @@ function goToForm(
             .getElementById("save-btn")
             .classList.add("header-save-disabled");
         document.getElementById("save-btn").classList.remove("header-save");
-    } else if (state.status == "New") {
+    } else if (state.status == "new") {
         document.getElementsByClassName("header-title")[0].textContent =
             "Ny utgift";
         document.getElementsByClassName("amount-label")[0].style.color =
@@ -92,9 +92,42 @@ function goToForm(
         document.getElementById("save-btn").classList.add("header-save");
 
         resetAll();
-    } else if (state.status == "Venter på godkjenning") {
-
+    } else if (state.status == "Avvist") {
+        document.getElementsByClassName("header-title")[0].textContent =
+            "Avvist";
+        document.getElementsByClassName("amount-label")[0].style.color =
+            "#ffffff";
+        document.getElementsByClassName("amount-card")[0].style.background =
+            "var(--red)";
+        document.getElementById("submit-btn").classList.remove("submit-btn");
+        document
+            .getElementById("submit-btn")
+            .classList.add("submit-btn-disabled");
+        document.getElementById("submit-btn").setAttribute("disabled", "true");
+        document.getElementById("save-btn").setAttribute("disabled", "true");
+        document
+            .getElementById("save-btn")
+            .classList.add("header-save-disabled");
+    } else {
+        state.id = id;
+        document.getElementsByClassName("header-title")[0].textContent =
+            "Rediger utgift";
+        document.getElementsByClassName("amount-label")[0].style.color =
+            "var(--stone-md)";
+        document.getElementsByClassName("amount-card")[0].style.background =
+            "var(--stone)";
+        document.getElementById("submit-btn").classList.add("submit-btn");
+        document
+            .getElementById("submit-btn")
+            .classList.remove("submit-btn-disabled");
+        document.getElementById("submit-btn").removeAttribute("disabled");
+        document.getElementById("save-btn").removeAttribute("disabled");
+        document
+            .getElementById("save-btn")
+            .classList.remove("header-save-disabled");
+        document.getElementById("save-btn").classList.add("header-save");
     }
+
     let antallElement = document.getElementById("amount-input");
     let typeElement = document.getElementById("select-type");
     let dateElement = document.getElementById("input-date");
@@ -102,7 +135,7 @@ function goToForm(
     let attenElement = document.getElementById("input-att");
     let countryElement = document.getElementById("select-country");
 
-    if (!(antall instanceof PointerEvent)) {
+    if (antall) {
         antallElement.value = antall;
     }
 
@@ -187,6 +220,7 @@ const state = {
     country: "",
     comment: "",
     status: "",
+    id: 0,
 };
 
 const fields = [
@@ -285,6 +319,16 @@ function closeAll(except) {
     });
 }
 function resetAll() {
+    state.amount = ""
+    state.currency = "NOK"
+    state.type = ""
+    state.date = ""
+    state.desc = ""
+    state.att = ""
+    state.country = ""
+    state.comment = ""
+    state.id = 0;
+    document.getElementById("amount-input").value = "";
     resetField("type");
     resetField("date");
     resetField("desc");
@@ -308,29 +352,27 @@ async function loadHistory() {
     ).length;
     document.getElementById("sc-pending").textContent = pending;
     console.log(pending);
-    
+
     console.log(expenses);
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
-    
 
     // This months expenses
-    const newItems = expenses
-    .filter((expense) => {
+    const newItems = expenses.filter((expense) => {
         const [day, month, year] = expense.Dato.split(".");
         const date = new Date(year, month - 1, day);
-        
+
         return date >= startOfMonth;
-    })
+    });
     console.log(newItems);
     let sum = 0;
-    newItems.forEach(item => {
-        sum += item.Antall
-    })
-    
+    newItems.forEach((item) => {
+        sum += item.Antall;
+    });
+
     document.getElementById("sc-total").textContent = sum;
-    
+
     expenses.forEach((expense) => {
         let parentDiv = document.createElement("div");
         let statusDiv = document.createElement("div");
@@ -343,11 +385,10 @@ async function loadHistory() {
 
         if (expense.Status == "Godkjent") {
             statusDiv.setAttribute("class", "exp-status-bar approved");
-        } else if (expense.Status == "Venter på godkjenning"){
+        } else if (expense.Status == "Venter på godkjenning") {
             statusDiv.setAttribute("class", "exp-status-bar sent");
         } else {
             statusDiv.setAttribute("class", "exp-status-bar denied");
-
         }
         iconDiv.setAttribute("class", "exp-icon");
         iconDiv.innerHTML = `<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`;
@@ -500,14 +541,35 @@ document.querySelectorAll(".currency-opt").forEach((opt) => {
 });
 document.addEventListener("click", () => currencyMenu.classList.remove("open"));
 
-document
-    .getElementById("save-btn")
-    .addEventListener("click", () => showToast("Draft saved ✓"));
+document.getElementById("save-btn").addEventListener("click", async () => {
+    let formatted = null;
+    if (state.date) {
+        formatted =
+            String(new Date(state.date).getDate()).padStart(2, "0") +
+            "." +
+            String(new Date(state.date).getMonth() + 1).padStart(2, "0") +
+            "." +
+            new Date(state.date).getFullYear();
+    }
+    const data = {
+        navn: "Timur",
+        antall: state.amount,
+        valuta: state.currency,
+        dato: formatted,
+        beskrivelse: state.desc,
+        deltagere: state.att,
+        land: state.country,
+        type: state.type,
+        expense: "Draft",
+    };
+    let response = await apiCall("/send/soknad", "POST", data);
+
+    showToast("Draft saved ✓");
+    // setTimeout(() => goBack(), 1200);
+});
 
 // Submit funkction
 document.getElementById("submit-btn").addEventListener("click", async () => {
-    console.log("function");
-
     try {
         if (!state.amount || parseFloat(state.amount) <= 0) {
             showToast("Please enter an amount.");
@@ -538,7 +600,6 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
             type: state.type,
         };
         let response = await apiCall("/send/soknad", "POST", data);
-        console.log(response);
 
         showToast("Expense submitted! ✓");
         setTimeout(() => goBack(), 1200);

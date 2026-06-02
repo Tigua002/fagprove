@@ -172,7 +172,7 @@ async function setStatus(id, newStatus) {
         id,
         status: newStatus
     }
-    const response = await apiCall("/oppdater/soknad", "POST", data)
+    const response = await apiCall("/oppdater/status", "POST", data)
     
     // update status bar
     console.log(el);
@@ -187,7 +187,7 @@ async function setStatus(id, newStatus) {
     updatePanelStatus(newStatus);
     applyFilter();
     countCards();
-    
+    loadItems()
     openItemEl.Status = newStatus
     showToast("Status endret til " + newStatus);
 }
@@ -215,6 +215,7 @@ function showToast(msg) {
 async function loadItems() {
     const response = await apiCall("/soknader", "GET");
     console.log(response.data);
+    document.getElementById("expList").innerHTML = "";
 
     let venter = 0;
     let godkjent = 0;
@@ -227,7 +228,6 @@ async function loadItems() {
         let rightDiv = document.createElement("div");
         let sideTag = "";
         let statusTag = "";
-        console.log(item);
 
         if (item.Status == "Godkjent") {
             godkjent++;
@@ -297,6 +297,8 @@ async function loadItems() {
     document.getElementById("sum-draft").textContent = venter;
     document.getElementById("sum-approved").textContent = godkjent;
     document.getElementById("sum-denied").textContent = avvist;
+    applyFilter()
+
 }
 
 async function countCards() {

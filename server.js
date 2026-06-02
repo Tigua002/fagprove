@@ -64,7 +64,7 @@ app.get("/soknader", (req, res) => {
 });
 app.get("/drafts/:id", (req, res) => {
     connection.query(
-        "SELECT * FROM ??.Soknader WHERE status != 'Godkjent' AND Navn = ? AND status != 'Venter på godkjenning'",
+        "SELECT * FROM ??.Soknader WHERE status = 'Draft' AND Navn = ?",
         [database, req.params.id],
         (err, result) => {
             if (!result) {
@@ -87,15 +87,14 @@ app.get("/drafts/:id", (req, res) => {
 
 app.post("/send/soknad", (req, res) => {
     const body = req.body;
-
-    const name = body.navn;
-    const amount = body.antall;
-    const valuta = body.valuta;
-    const date = body.dato;
-    const description = body.beskrivelse;
-    const attendees = body.deltagere;
-    const country = body.land;
-    const type = body.type;
+    const name = body.navn || null
+    const amount = body.antall || null
+    const valuta = body.valuta || null
+    const date = body.dato || null
+    const description = body.beskrivelse || null
+    const attendees = body.deltagere || null
+    const country = body.land || null
+    const type = body.type || null
     let expense;
     if (body.expense == "Draft"){
         expense = "Draft"
@@ -132,20 +131,15 @@ app.post("/send/soknad", (req, res) => {
         },
     );
 });
-app.post("/oppdater/soknad", (req, res) => {
+
+app.post("/oppdater/status", (req, res) => {
     console.log(req.body);
     const body = req.body;
-
     const id = body.id
     const status = body.status
-
     connection.query(
         "UPDATE ??.Soknader SET Status = ? WHERE ID = ?",
-        [
-            database,
-            status,
-            id
-        ],
+        [database, status, id],
         (err, result) => {
             if (err) {
                 console.log(err);
