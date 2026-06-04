@@ -1324,3 +1324,316 @@ body {
       width: 17px; height: 17px; stroke: currentColor; fill: none;
       stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0;
     }
+
+        /* ── Layout ── */
+    .screen {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* ── Top brand block ── */
+    .brand-block {
+      background: var(--stone);
+      padding: 3.5rem 1.75rem 2.5rem;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    /* decorative circles */
+    .brand-block::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: rgba(200,89,58,0.12);
+      pointer-events: none;
+    }
+    .brand-block::after {
+      content: '';
+      position: absolute;
+      bottom: -40px; left: 10px;
+      width: 130px; height: 130px;
+      border-radius: 50%;
+      background: rgba(200,89,58,0.07);
+      pointer-events: none;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 2rem;
+    }
+    .brand-logo-mark {
+      width: 38px; height: 38px;
+      background: var(--clay);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(200,89,58,0.4);
+      flex-shrink: 0;
+    }
+    .brand-logo-mark svg {
+      width: 20px; height: 20px;
+      stroke: #fff; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .brand-logo-name {
+      font-family: "DM Serif Display", serif;
+      font-size: 1.25rem;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-headline {
+      font-family: "DM Serif Display", serif;
+      font-size: 2rem;
+      color: #fff;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      margin-bottom: 0.6rem;
+      position: relative; z-index: 1;
+    }
+    .brand-sub {
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.5;
+      position: relative; z-index: 1;
+    }
+
+    /* ── Form card ── */
+    .form-wrap {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 1.75rem 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .form-label-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .form-label {
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--stone-md);
+      padding-left: 2px;
+    }
+
+    /* ── Input field ── */
+    .input-wrap {
+      position: relative;
+    }
+    .input-icon {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%; transform: translateY(-50%);
+      display: flex; align-items: center;
+      pointer-events: none;
+    }
+    .input-icon svg {
+      width: 17px; height: 17px;
+      stroke: var(--stone-md); fill: none;
+      stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+      transition: stroke 0.15s;
+    }
+    .input-wrap input {
+      width: 100%;
+      background: var(--warm-wh);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 0.9rem 0.8rem 2.65rem;
+      font-family: "DM Sans", sans-serif;
+      font-size: 0.95rem;
+      color: var(--stone);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      -webkit-appearance: none;
+    }
+    .input-wrap input::placeholder { color: var(--stone-md); opacity: 0.7; }
+    .input-wrap input:focus {
+      border-color: var(--clay);
+      box-shadow: 0 0 0 3px rgba(200,89,58,0.12);
+    }
+    .input-wrap input:focus + .input-icon svg,
+    .input-wrap:focus-within .input-icon svg { stroke: var(--clay); }
+
+    /* eye toggle */
+    .eye-toggle {
+      position: absolute;
+      right: 0.9rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      display: flex; align-items: center; padding: 0;
+    }
+    .eye-toggle svg {
+      width: 17px; height: 17px;
+      stroke: var(--stone-md); fill: none;
+      stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+      transition: stroke 0.15s;
+    }
+    .eye-toggle:hover svg { stroke: var(--stone); }
+
+    /* ── Forgot link ── */
+    .forgot-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: -0.25rem;
+    }
+    .forgot-link {
+      font-size: 0.8rem;
+      color: var(--clay);
+      text-decoration: none;
+      font-weight: 500;
+      transition: opacity 0.15s;
+    }
+    .forgot-link:hover { opacity: 0.75; }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .divider-line {
+      flex: 1; height: 1px; background: var(--border);
+    }
+    .divider-text {
+      font-size: 0.72rem; font-weight: 500;
+      color: var(--stone-md); letter-spacing: 0.06em;
+      text-transform: uppercase; white-space: nowrap;
+    }
+
+    /* ── SSO button ── */
+    .sso-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.65rem;
+      width: 100%;
+      background: var(--warm-wh);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 1rem;
+      font-family: "DM Sans", sans-serif;
+      font-size: 0.92rem; font-weight: 500;
+      color: var(--stone);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      text-decoration: none;
+    }
+    .sso-btn:hover { background: var(--stone-lt); border-color: var(--stone-md); }
+    .sso-btn svg {
+      width: 18px; height: 18px; flex-shrink: 0;
+    }
+
+    /* ── Primary submit button ── */
+    .submit-btn {
+      width: 100%;
+      background: var(--clay);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 1rem;
+      font-family: "DM Serif Display", serif;
+      font-size: 1.15rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      box-shadow: 0 4px 20px rgba(200,89,58,0.3);
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+      margin-top: 0.25rem;
+    }
+    .submit-btn:hover { background: var(--clay-dk); box-shadow: 0 6px 24px rgba(200,89,58,0.38); }
+    .submit-btn:active { transform: scale(0.98); }
+    .submit-btn svg {
+      width: 18px; height: 18px;
+      stroke: rgba(255,255,255,0.85); fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* loading spinner inside button */
+    .spinner {
+      display: none;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .submit-btn.loading .btn-label,
+    .submit-btn.loading .btn-arrow { display: none; }
+    .submit-btn.loading .spinner { display: block; }
+
+    /* ── Footer register link ── */
+    .register-row {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--stone-md);
+      padding-top: 0.25rem;
+    }
+    .register-row a {
+      color: var(--clay); font-weight: 500; text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .register-row a:hover { opacity: 0.75; }
+
+    /* ── Error message ── */
+    .field-error {
+      font-size: 0.72rem; color: #c0392b;
+      padding-left: 2px; display: none; align-items: center; gap: 4px;
+    }
+    .field-error.show { display: flex; }
+    .field-error svg {
+      width: 13px; height: 13px;
+      stroke: #c0392b; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    .input-wrap input.invalid { border-color: #c0392b; }
+    .input-wrap input.invalid:focus { box-shadow: 0 0 0 3px rgba(192,57,43,0.12); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem; left: 50%;
+      transform: translateX(-50%) translateY(30px);
+      background: var(--stone); color: #fff;
+      padding: 0.65rem 1.25rem; border-radius: 40px;
+      font-size: 0.85rem; opacity: 0;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
+      pointer-events: none; white-space: nowrap; z-index: 200;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ── Success state ── */
+    .success-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: var(--cream);
+      z-index: 300;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 1rem;
+      padding: 2rem;
+      text-align: center;
+    }
+    .success-overlay.show { display: flex; }
+    .success-check {
+      width: 64px; height: 64px;
+      background: #e3f7ee;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .success-check svg {
+      width: 30px; height: 30px;
+      stroke: #1e7a4a; fill: none;
+      stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .success-title {
+      font-family: "DM Serif Display", serif;
+      font-size: 1.5rem; color: var(--stone); letter-spacing: -0.02em;
+    }
+    .success-sub { font-size: 0.88rem; color: var(--stone-md); }

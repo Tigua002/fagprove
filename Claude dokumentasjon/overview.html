@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oversikt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --clay: #c8593a;
+      --clay-lt: #f2e8e4;
+      --clay-mid: #e8c4b4;
+      --clay-dk: #7a2f1a;
+      --stone: #2c2a26;
+      --stone-lt: #f7f5f2;
+      --stone-md: #8a8680;
+      --cream: #fbf8f4;
+      --warm-wh: #ffffff;
+      --border: rgba(44,42,38,0.12);
+      --radius: 16px;
+      --radius-sm: 8px;
+      --green: #3baa6e;
+      --green-lt: #e3f7ee;
+      --green-dk: #1e7a4a;
+      --red: #c0392b;
+      --red-lt: #fdecea;
+      --red-dk: #7a1a13;
+    }
+
+    body {
+      font-family: "DM Sans", sans-serif;
+      background: var(--cream);
+      color: var(--stone);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    .tab-header {
+      background: var(--stone);
+      padding: 2.5rem 1.25rem 1rem;
+      display: flex; align-items: flex-end; justify-content: space-between;
+      position: sticky; top: 0; z-index: 20;
+    }
+    .tab-header-title {
+      font-family: "DM Serif Display", serif;
+      font-size: 1.7rem; color: #fff; letter-spacing: -0.02em;
+    }
+    .tab-icon-btn {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,0.1); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .tab-icon-btn:hover { background: rgba(255,255,255,0.18); }
+    .tab-icon-btn svg {
+      width: 17px; height: 17px; stroke: rgba(255,255,255,0.8);
+      fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* ── Search + filter bar ── */
+    .search-bar {
+      background: var(--warm-wh);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.25rem 0;
+      position: sticky; top: 0; z-index: 15;
+    }
+    .search-row {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding-bottom: 0.75rem;
+    }
+    .search-inner {
+      flex: 1; display: flex; align-items: center; gap: 0.5rem;
+      background: var(--stone-lt); border: 1px solid var(--border);
+      border-radius: 40px; padding: 0.45rem 0.85rem;
+    }
+    .search-inner svg {
+      width: 15px; height: 15px; stroke: var(--stone-md); fill: none;
+      stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0;
+    }
+    .search-inner input {
+      background: none; border: none; outline: none;
+      font-family: "DM Sans", sans-serif; font-size: 0.88rem; color: var(--stone); width: 100%;
+    }
+    .search-inner input::placeholder { color: var(--stone-md); }
+
+    /* ── Filter chips ── */
+    .filter-chips {
+      display: flex; gap: 0.45rem; overflow-x: auto;
+      padding-bottom: 0.75rem; scrollbar-width: none;
+    }
+    .filter-chips::-webkit-scrollbar { display: none; }
+    .chip {
+      display: flex; align-items: center; gap: 4px;
+      padding: 0.32rem 0.75rem; border-radius: 40px;
+      font-family: "DM Sans", sans-serif; font-size: 0.75rem; font-weight: 500;
+      white-space: nowrap; cursor: pointer; border: 1.5px solid var(--border);
+      background: var(--warm-wh); color: var(--stone-md);
+      transition: all 0.15s;
+    }
+    .chip:hover { border-color: var(--stone-md); color: var(--stone); }
+    .chip.active {
+      background: var(--stone); border-color: var(--stone); color: #fff;
+    }
+    .chip.active.chip-draft   { background: var(--clay);   border-color: var(--clay); }
+    .chip.active.chip-sent    { background: var(--stone-md); border-color: var(--stone-md); }
+    .chip.active.chip-approved { background: var(--green); border-color: var(--green); }
+    .chip.active.chip-denied  { background: var(--red);   border-color: var(--red); }
+    .chip-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.6;
+    }
+
+    /* ── Summary cards ── */
+    .summary-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 0.55rem; padding: 1rem 1.25rem 0.5rem;
+    }
+    .sum-card {
+      background: var(--warm-wh); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 0.65rem 0.75rem;
+    }
+    .sum-card.accent { background: var(--stone); border-color: transparent; }
+    .sum-label {
+      font-size: 0.58rem; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--stone-md); margin-bottom: 3px;
+    }
+    .sum-card.accent .sum-label { color: rgba(255,255,255,0.5); }
+    .sum-val {
+      font-family: "DM Serif Display", serif; font-size: 1.2rem;
+      color: var(--stone); letter-spacing: -0.01em;
+    }
+    .sum-card.accent .sum-val { color: #fff; }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 0.68rem; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--stone-md);
+      padding: 0.9rem 1.25rem 0.4rem;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      display: none; flex-direction: column; align-items: center;
+      padding: 3rem 1.5rem; color: var(--stone-md); text-align: center;
+    }
+    .empty-state svg {
+      width: 40px; height: 40px; stroke: var(--stone-md); fill: none;
+      stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
+      margin-bottom: 0.75rem; opacity: 0.5;
+    }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ── List rows ── */
+    .exp-list { display: flex; flex-direction: column; }
+    .exp-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--warm-wh); cursor: pointer;
+      transition: background 0.12s; position: relative;
+    }
+    .exp-item:last-child { border-bottom: none; }
+    .exp-item:hover { background: var(--stone-lt); }
+    .exp-item.hidden { display: none; }
+
+    .exp-status-bar {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px; border-radius: 0 2px 2px 0;
+    }
+    .bar-draft    { background: var(--clay); }
+    .bar-sent     { background: var(--stone-md); }
+    .bar-approved { background: var(--green); }
+    .bar-denied   { background: var(--red); }
+
+    .exp-icon {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      background: var(--stone-lt); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .exp-icon svg {
+      width: 18px; height: 18px; stroke: var(--stone-md); fill: none;
+      stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .exp-icon.clay-icon { background: var(--clay-lt); }
+    .exp-icon.clay-icon svg { stroke: var(--clay-dk); }
+
+    .exp-info { flex: 1; min-width: 0; }
+    .exp-name {
+      font-size: 0.9rem; font-weight: 500; color: var(--stone);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .exp-sub {
+      font-size: 0.72rem; color: var(--stone-md);
+      display: flex; align-items: center; gap: 6px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;
+    }
+
+    .avatars { display: flex; flex-direction: row-reverse; }
+    .avatar {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 1.5px solid var(--warm-wh); background: var(--clay-mid);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.52rem; font-weight: 500; color: var(--clay-dk);
+      margin-left: -6px; flex-shrink: 0;
+    }
+    .avatar:last-child { margin-left: 0; }
+    .avatar.s { background: #c5d8ea; color: #2a5880; }
+    .avatar.g { background: #c5e4d4; color: #1e5e3c; }
+
+    .tag {
+      font-size: 0.6rem; font-weight: 500; letter-spacing: 0.06em;
+      text-transform: uppercase; padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+    }
+    .tag-draft    { background: var(--clay-lt);  color: var(--clay-dk); }
+    .tag-sent     { background: var(--stone-lt); color: var(--stone-md); }
+    .tag-approved { background: var(--green-lt); color: var(--green-dk); }
+    .tag-denied   { background: var(--red-lt);   color: var(--red-dk); }
+
+    .exp-right { text-align: right; flex-shrink: 0; }
+    .exp-amount { font-size: 0.92rem; font-weight: 600; color: var(--stone); }
+    .exp-amount span { font-weight: 400; font-size: 0.76rem; color: var(--stone-md); }
+    .exp-date { font-size: 0.68rem; color: var(--stone-md); margin-top: 2px; }
+
+    /* ── Detail panel (slide up) ── */
+    .panel-overlay {
+      position: fixed; inset: 0; background: rgba(44,42,38,0.45);
+      z-index: 100; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .panel-overlay.open { opacity: 1; pointer-events: all; }
+
+    .detail-panel {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--cream); border-radius: var(--radius) var(--radius) 0 0;
+      z-index: 101; transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .detail-panel.open { transform: translateY(0); }
+
+    .panel-handle {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: var(--border); margin: 0.75rem auto 0;
+    }
+    .panel-header {
+      padding: 1rem 1.25rem 0.5rem;
+      display: flex; align-items: flex-start; justify-content: space-between;
+    }
+    .panel-title {
+      font-family: "DM Serif Display", serif;
+      font-size: 1.3rem; color: var(--stone); letter-spacing: -0.01em;
+    }
+    .panel-close {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--stone-lt); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .panel-close svg {
+      width: 14px; height: 14px; stroke: var(--stone-md); fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .panel-meta {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0.5rem; padding: 0.75rem 1.25rem;
+    }
+    .meta-item {
+      background: var(--warm-wh); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 0.65rem 0.85rem;
+    }
+    .meta-label {
+      font-size: 0.6rem; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--stone-md); margin-bottom: 3px;
+    }
+    .meta-val { font-size: 0.88rem; font-weight: 500; color: var(--stone); }
+
+    .panel-people {
+      padding: 0 1.25rem 0.75rem;
+    }
+    .people-label {
+      font-size: 0.6rem; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--stone-md); margin-bottom: 0.5rem;
+    }
+    .people-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .person-chip {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--warm-wh); border: 1px solid var(--border);
+      border-radius: 40px; padding: 0.3rem 0.65rem 0.3rem 0.3rem;
+      font-size: 0.78rem; color: var(--stone);
+    }
+    .person-chip .avatar { width: 22px; height: 22px; font-size: 0.55rem; margin-left: 0; }
+
+    .panel-divider {
+      height: 1px; background: var(--border); margin: 0.25rem 1.25rem;
+    }
+
+    .panel-status-section { padding: 0.75rem 1.25rem 0; }
+    .panel-status-label {
+      font-size: 0.6rem; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--stone-md); margin-bottom: 0.6rem;
+    }
+    .current-status-row {
+      display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.85rem;
+    }
+    .current-status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .current-status-text { font-size: 0.9rem; font-weight: 500; color: var(--stone); }
+
+    .status-actions {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0.6rem; padding-bottom: 1.25rem;
+    }
+    .status-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 0.85rem 1rem; border-radius: var(--radius-sm);
+      font-family: "DM Sans", sans-serif; font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; border: 1.5px solid var(--border);
+      background: var(--warm-wh); color: var(--stone);
+      transition: all 0.15s;
+    }
+    .status-btn:hover { border-color: var(--stone-md); background: var(--stone-lt); }
+    .status-btn.btn-approve {
+      background: var(--green-lt); border-color: var(--green);
+      color: var(--green-dk);
+    }
+    .status-btn.btn-approve:hover { background: #cdf0de; }
+    .status-btn.btn-deny {
+      background: var(--red-lt); border-color: var(--red);
+      color: var(--red-dk);
+    }
+    .status-btn.btn-deny:hover { background: #f9d6d3; }
+    .status-btn.btn-active {
+      opacity: 0.4; cursor: default; pointer-events: none;
+    }
+    .status-btn svg {
+      width: 17px; height: 17px; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 1.5rem; left: 50%;
+      transform: translateX(-50%) translateY(30px);
+      background: var(--stone); color: #fff;
+      padding: 0.65rem 1.25rem; border-radius: 40px;
+      font-size: 0.85rem; opacity: 0;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
+      pointer-events: none; white-space: nowrap; z-index: 200;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="tab-header">
+  <div class="tab-header-title">Oversikt</div>
+  <div style="display:flex;gap:0.6rem;">
+    <button class="tab-icon-btn" aria-label="Sorter">
+      <svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Search + filter chips -->
+<div class="search-bar">
+  <div class="search-row">
+    <div class="search-inner">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+      <input type="text" id="searchInput" placeholder="Søk på navn, land, type…" />
+    </div>
+  </div>
+  <div class="filter-chips">
+    <div class="chip active" data-filter="all">Alle</div>
+    <div class="chip chip-draft" data-filter="draft"><span class="chip-dot"></span>Utkast</div>
+    <div class="chip chip-sent" data-filter="sent"><span class="chip-dot"></span>Sendt</div>
+    <div class="chip chip-approved" data-filter="approved"><span class="chip-dot"></span>Godkjent</div>
+    <div class="chip chip-denied" data-filter="denied"><span class="chip-dot"></span>Avvist</div>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="summary-row">
+  <div class="sum-card accent">
+    <div class="sum-label">Totalt</div>
+    <div class="sum-val" id="sum-total">5</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-label">Utkast</div>
+    <div class="sum-val" id="sum-draft" style="color:var(--clay)">0</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-label">Godkjent</div>
+    <div class="sum-val" id="sum-approved" style="color:var(--green)">0</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-label">Avvist</div>
+    <div class="sum-val" id="sum-denied" style="color:var(--red)">0</div>
+  </div>
+</div>
+
+<div class="section-label" id="listLabel">Alle oppføringer</div>
+
+<!-- List -->
+<div class="exp-list" id="expList">
+
+  <div class="exp-item"
+    data-id="1" data-status="draft"
+    data-name="Hotellopphold Berlin"
+    data-country="🇩🇪 DE" data-type="Overnatting"
+    data-amount="4 200" data-currency="USD" data-date="24. mai"
+    data-participants="AJ,SK,MR"
+    data-bruker="Anna Johansen">
+    <div class="exp-status-bar bar-draft"></div>
+    <div class="exp-icon clay-icon">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <div class="exp-info">
+      <div class="exp-name">Hotellopphold Berlin</div>
+      <div class="exp-sub">
+        <span>🇩🇪 DE · Overnatting</span>
+        <div class="avatars">
+          <div class="avatar">AJ</div>
+          <div class="avatar s">SK</div>
+          <div class="avatar g">MR</div>
+        </div>
+      </div>
+    </div>
+    <div class="exp-right">
+      <div class="exp-amount">4 200 <span>USD</span></div>
+      <div class="exp-date">24. mai</div>
+      <div style="margin-top:4px"><span class="tag tag-draft status-tag">Utkast</span></div>
+    </div>
+  </div>
+
+  <div class="exp-item"
+    data-id="2" data-status="approved"
+    data-name="Klientmøte Oslo"
+    data-country="🇳🇴 NO" data-type="Representasjon"
+    data-amount="1 850" data-currency="USD" data-date="21. mai"
+    data-participants="LH,BT"
+    data-bruker="Lars Holm">
+    <div class="exp-status-bar bar-approved"></div>
+    <div class="exp-icon">
+      <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.37 19a19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 3.1 4.18 2 2 0 0 1 5.08 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L9.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    </div>
+    <div class="exp-info">
+      <div class="exp-name">Klientmøte Oslo</div>
+      <div class="exp-sub">
+        <span>🇳🇴 NO · Representasjon</span>
+        <div class="avatars">
+          <div class="avatar">LH</div>
+          <div class="avatar s">BT</div>
+        </div>
+      </div>
+    </div>
+    <div class="exp-right">
+      <div class="exp-amount">1 850 <span>USD</span></div>
+      <div class="exp-date">21. mai</div>
+      <div style="margin-top:4px"><span class="tag tag-approved status-tag">Godkjent</span></div>
+    </div>
+  </div>
+
+  <div class="exp-item"
+    data-id="3" data-status="sent"
+    data-name="Programvarelisenser"
+    data-country="🇺🇸 US" data-type="Programvare"
+    data-amount="990" data-currency="USD" data-date="18. mai"
+    data-participants="PP"
+    data-bruker="Per Paulsen">
+    <div class="exp-status-bar bar-sent"></div>
+    <div class="exp-icon">
+      <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </div>
+    <div class="exp-info">
+      <div class="exp-name">Programvarelisenser</div>
+      <div class="exp-sub">
+        <span>🇺🇸 US · Programvare</span>
+        <div class="avatars">
+          <div class="avatar g">PP</div>
+        </div>
+      </div>
+    </div>
+    <div class="exp-right">
+      <div class="exp-amount">990 <span>USD</span></div>
+      <div class="exp-date">18. mai</div>
+      <div style="margin-top:4px"><span class="tag tag-sent status-tag">Sendt</span></div>
+    </div>
+  </div>
+
+  <div class="exp-item"
+    data-id="4" data-status="draft"
+    data-name="Teamretreat Barcelona"
+    data-country="🇪🇸 ES" data-type="Arrangement"
+    data-amount="18 400" data-currency="USD" data-date="12. mai"
+    data-participants="AJ,SK,MR,+4"
+    data-bruker="Anna Johansen">
+    <div class="exp-status-bar bar-draft"></div>
+    <div class="exp-icon clay-icon">
+      <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+    </div>
+    <div class="exp-info">
+      <div class="exp-name">Teamretreat Barcelona</div>
+      <div class="exp-sub">
+        <span>🇪🇸 ES · Arrangement</span>
+        <div class="avatars">
+          <div class="avatar">AJ</div>
+          <div class="avatar s">SK</div>
+          <div class="avatar g">MR</div>
+          <div class="avatar">+4</div>
+        </div>
+      </div>
+    </div>
+    <div class="exp-right">
+      <div class="exp-amount">18 400 <span>USD</span></div>
+      <div class="exp-date">12. mai</div>
+      <div style="margin-top:4px"><span class="tag tag-draft status-tag">Utkast</span></div>
+    </div>
+  </div>
+
+  <div class="exp-item"
+    data-id="5" data-status="approved"
+    data-name="Konferansebilletter"
+    data-country="🇬🇧 GB" data-type="Konferanse"
+    data-amount="3 100" data-currency="USD" data-date="8. mai"
+    data-participants="JW,CM"
+    data-bruker="Jonas Wiig">
+    <div class="exp-status-bar bar-approved"></div>
+    <div class="exp-icon">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    </div>
+    <div class="exp-info">
+      <div class="exp-name">Konferansebilletter</div>
+      <div class="exp-sub">
+        <span>🇬🇧 GB · Konferanse</span>
+        <div class="avatars">
+          <div class="avatar s">JW</div>
+          <div class="avatar">CM</div>
+        </div>
+      </div>
+    </div>
+    <div class="exp-right">
+      <div class="exp-amount">3 100 <span>USD</span></div>
+      <div class="exp-date">8. mai</div>
+      <div style="margin-top:4px"><span class="tag tag-approved status-tag">Godkjent</span></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="empty-state" id="emptyState">
+  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+  <p>Ingen oppføringer funnet</p>
+</div>
+
+<!-- Overlay -->
+<div class="panel-overlay" id="overlay"></div>
+
+<!-- Detail panel -->
+<div class="detail-panel" id="detailPanel">
+  <div class="panel-handle"></div>
+  <div class="panel-header">
+    <div class="panel-title" id="panelTitle">—</div>
+    <button class="panel-close" id="panelClose">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <div class="panel-meta">
+    <div class="meta-item">
+      <div class="meta-label">Bruker</div>
+      <div class="meta-val" id="panelBruker">—</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Land</div>
+      <div class="meta-val" id="panelLand">—</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Type</div>
+      <div class="meta-val" id="panelType">—</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Dato</div>
+      <div class="meta-val" id="panelDate">—</div>
+    </div>
+    <div class="meta-item" style="grid-column:1/-1;">
+      <div class="meta-label">Beløp</div>
+      <div class="meta-val" id="panelAmount" style="font-family:'DM Serif Display',serif;font-size:1.1rem;">—</div>
+    </div>
+  </div>
+
+  <div class="panel-people">
+    <div class="people-label">Deltagere</div>
+    <div class="people-row" id="panelPeople"></div>
+  </div>
+
+  <div class="panel-divider"></div>
+
+  <div class="panel-status-section">
+    <div class="panel-status-label">Nåværende status</div>
+    <div class="current-status-row">
+      <div class="current-status-dot" id="panelStatusDot"></div>
+      <div class="current-status-text" id="panelStatusText">—</div>
+    </div>
+    <div class="panel-status-label">Endre status</div>
+    <div class="status-actions">
+      <button class="status-btn btn-approve" id="btnApprove">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Godkjenn
+      </button>
+      <button class="status-btn btn-deny" id="btnDeny">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Avvis
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const STATUS_LABELS = { draft:'Utkast', sent:'Sendt', approved:'Godkjent', denied:'Avvist' };
+  const STATUS_COLORS = { draft:'var(--clay)', sent:'var(--stone-md)', approved:'var(--green)', denied:'var(--red)' };
+
+  let activeFilter = 'all';
+  let searchQuery  = '';
+  let openItemEl   = null;
+
+  /* ── helpers ── */
+  function tagClass(s)  { return 'tag tag-' + s; }
+  function barClass(s)  { return 'exp-status-bar bar-' + s; }
+
+  /* ── summary counter ── */
+  function updateSummary() {
+    const items = [...document.querySelectorAll('.exp-item')];
+    const counts = { draft:0, sent:0, approved:0, denied:0 };
+    items.forEach(el => counts[el.dataset.status]++);
+    document.getElementById('sum-total').textContent   = items.length;
+    document.getElementById('sum-draft').textContent   = counts.draft;
+    document.getElementById('sum-approved').textContent = counts.approved;
+    document.getElementById('sum-denied').textContent  = counts.denied;
+  }
+
+  /* ── filter + search ── */
+  function applyFilter() {
+    const items = [...document.querySelectorAll('.exp-item')];
+    let visible = 0;
+    items.forEach(el => {
+      const statusMatch  = activeFilter === 'all' || el.dataset.status === activeFilter;
+      const q = searchQuery.toLowerCase();
+      const searchMatch  = !q ||
+        el.dataset.name.toLowerCase().includes(q) ||
+        el.dataset.country.toLowerCase().includes(q) ||
+        el.dataset.type.toLowerCase().includes(q) ||
+        el.dataset.bruker.toLowerCase().includes(q);
+      const show = statusMatch && searchMatch;
+      el.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+
+    document.getElementById('emptyState').style.display = visible ? 'none' : 'flex';
+
+    // Update section label
+    const label = activeFilter === 'all'
+      ? 'Alle oppføringer'
+      : STATUS_LABELS[activeFilter];
+    document.getElementById('listLabel').textContent = label + (searchQuery ? ` · "${searchQuery}"` : '');
+  }
+
+  /* ── chip click ── */
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeFilter = chip.dataset.filter;
+      applyFilter();
+    });
+  });
+
+  /* ── search input ── */
+  document.getElementById('searchInput').addEventListener('input', e => {
+    searchQuery = e.target.value.trim();
+    applyFilter();
+  });
+
+  /* ── open panel ── */
+  function openPanel(el) {
+    openItemEl = el;
+    const d = el.dataset;
+    document.getElementById('panelTitle').textContent  = d.name;
+    document.getElementById('panelBruker').textContent = d.bruker;
+    document.getElementById('panelLand').textContent   = d.country;
+    document.getElementById('panelType').textContent   = d.type;
+    document.getElementById('panelDate').textContent   = d.date;
+    document.getElementById('panelAmount').textContent = d.amount + ' ' + d.currency;
+
+    // participants
+    const peopleEl = document.getElementById('panelPeople');
+    peopleEl.innerHTML = '';
+    d.participants.split(',').forEach(p => {
+      const chip = document.createElement('div');
+      chip.className = 'person-chip';
+      const cls = p.startsWith('+') ? '' : (p[1] === 'K' || p[1] === 'T' ? 's' : (p[1] === 'R' || p[1] === 'P' ? 'g' : ''));
+      chip.innerHTML = `<div class="avatar ${cls}">${p}</div><span>${p}</span>`;
+      peopleEl.appendChild(chip);
+    });
+
+    updatePanelStatus(d.status);
+
+    document.getElementById('detailPanel').classList.add('open');
+    document.getElementById('overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function updatePanelStatus(status) {
+    document.getElementById('panelStatusDot').style.background = STATUS_COLORS[status];
+    document.getElementById('panelStatusText').textContent = STATUS_LABELS[status];
+    document.getElementById('btnApprove').classList.toggle('btn-active', status === 'approved');
+    document.getElementById('btnDeny').classList.toggle('btn-active', status === 'denied');
+  }
+
+  /* ── close panel ── */
+  function closePanel() {
+    document.getElementById('detailPanel').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    openItemEl = null;
+  }
+
+  document.getElementById('panelClose').addEventListener('click', closePanel);
+  document.getElementById('overlay').addEventListener('click', closePanel);
+
+  /* ── row click ── */
+  document.querySelectorAll('.exp-item').forEach(el => {
+    el.addEventListener('click', () => openPanel(el));
+  });
+
+  /* ── change status ── */
+  function setStatus(el, newStatus) {
+    el.dataset.status = newStatus;
+
+    // update status bar
+    el.querySelector('.exp-status-bar').className = 'exp-status-bar ' + barClass(newStatus);
+
+    // update tag
+    const tag = el.querySelector('.status-tag');
+    tag.className = 'tag status-tag ' + tagClass(newStatus);
+    tag.textContent = STATUS_LABELS[newStatus];
+
+    updatePanelStatus(newStatus);
+    updateSummary();
+    applyFilter();
+
+    showToast('Status endret til ' + STATUS_LABELS[newStatus]);
+  }
+
+  document.getElementById('btnApprove').addEventListener('click', () => {
+    if (openItemEl) setStatus(openItemEl, 'approved');
+    setTimeout(closePanel, 600);
+  });
+
+  document.getElementById('btnDeny').addEventListener('click', () => {
+    if (openItemEl) setStatus(openItemEl, 'denied');
+    setTimeout(closePanel, 600);
+  });
+
+  /* ── toast ── */
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  /* ── init ── */
+  updateSummary();
+</script>
+</body>
+</html>

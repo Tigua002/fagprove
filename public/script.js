@@ -54,7 +54,7 @@ function goToForm(
     country,
     id,
 ) {
-    console.log(state.status);
+
     resetAll()
     if (state.status == "Godkjent") {
         document.getElementsByClassName("header-title")[0].textContent =
@@ -304,7 +304,6 @@ function resetField(fieldId) {
     document.getElementById(f.row).classList.remove("has-value");
     document.getElementById(f.inp).classList.add("open");
     f.element.value = "";
-    console.log(f.element);
 
     document.getElementById(f.row).classList.add("active");
     document.getElementById(f.row).setAttribute("aria-expanded", "true");
@@ -351,9 +350,7 @@ async function loadHistory() {
         (expense) => expense.Status == "Venter på godkjenning",
     ).length;
     document.getElementById("sc-pending").textContent = pending;
-    console.log(pending);
 
-    console.log(expenses);
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -365,7 +362,6 @@ async function loadHistory() {
 
         return date >= startOfMonth;
     });
-    console.log(newItems);
     let sum = 0;
     newItems.forEach((item) => {
         sum += item.Antall;
@@ -430,8 +426,6 @@ async function loadDrafts() {
     document.getElementById("drafts").innerHTML = "";
 
     response.data.forEach((expense) => {
-        console.log("test");
-
         let parentDiv = document.createElement("div");
         let draftDiv = document.createElement("div");
         let iconDiv = document.createElement("div");
@@ -459,6 +453,7 @@ async function loadDrafts() {
 
         parentDiv.addEventListener("click", () => {
             state.status = "Draft";
+            
             goToForm(
                 expense.Antall,
                 expense.Valuta,
@@ -467,7 +462,7 @@ async function loadDrafts() {
                 expense.Beskrivelse,
                 expense.Deltagere,
                 expense.Land,
-                expense.id,
+                expense.ID,
             );
         });
 
@@ -598,11 +593,17 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
             deltagere: state.att,
             land: state.country,
             type: state.type,
+            expense: "Venter på godkjenning",
+            id: state.id || null
         };
+        console.log(data);
+        
         let response = await apiCall("/send/soknad", "POST", data);
 
         showToast("Expense submitted! ✓");
         setTimeout(() => goBack(), 1200);
+        loadDrafts()
+        loadHistory()
     } catch (error) {
         console.error(error);
         showToast("Critical error occured, try again later");
@@ -636,7 +637,6 @@ async function apiCall(url, method, data) {
             method: method,
         });
     }
-    console.log(response);
 
     return await response.json();
 }

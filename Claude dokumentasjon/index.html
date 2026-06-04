@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Expenses</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --clay:     #C8593A;
+  --clay-lt:  #F2E8E4;
+  --clay-mid: #E8C4B4;
+  --clay-dk:  #7A2F1A;
+  --stone:    #2C2A26;
+  --stone-lt: #F7F5F2;
+  --stone-md: #8A8680;
+  --cream:    #FBF8F4;
+  --warm-wh:  #FFFFFF;
+  --border:   rgba(44,42,38,0.12);
+  --radius:   16px;
+  --radius-sm: 8px;
+  --nav-h:    80px;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--stone);
+}
+
+/* ── Page system ── */
+.page {
+  position: fixed;
+  inset: 0;
+  bottom: var(--nav-h); /* leave room for nav */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.28s;
+  will-change: transform;
+  background: var(--cream);
+}
+/* form page goes full height (has its own back nav, no bottom tab bar) */
+#page-form {
+  bottom: 0;
+}
+.page.hidden-left  { transform: translateX(-100%); opacity: 0; pointer-events: none; }
+.page.hidden-right { transform: translateX(100%);  opacity: 0; pointer-events: none; }
+.page.visible      { transform: translateX(0);     opacity: 1; pointer-events: all; }
+
+/* ── Fixed bottom nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: var(--warm-wh);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 1rem 1rem;
+  z-index: 200;
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; flex: 1;
+  background: none; border: none; padding: 0.2rem 0;
+}
+.nav-item svg { width: 22px; height: 22px; stroke: var(--stone-md); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.nav-label { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--stone-md); }
+.nav-item.active svg   { stroke: var(--clay); }
+.nav-item.active .nav-label { color: var(--clay); }
+
+.nav-create-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+.nav-create {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--clay); border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; margin-bottom: 0;
+  box-shadow: 0 4px 16px rgba(200,89,58,0.35);
+  transition: background 0.15s, transform 0.1s;
+}
+.nav-create:hover  { background: var(--clay-dk); }
+.nav-create:active { transform: scale(0.95); }
+.nav-create svg { width: 24px; height: 24px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.nav-create-label { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--clay); }
+
+/* ════════════════════════════════
+   SHARED TAB HEADER STRIP
+════════════════════════════════ */
+.tab-header {
+  background: var(--stone);
+  padding: 3rem 1.5rem 1rem;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+}
+.tab-header-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.8rem; color: #fff; letter-spacing: -0.02em;
+}
+.tab-header-actions { display: flex; gap: 0.75rem; }
+.tab-icon-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.1); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.tab-icon-btn:hover { background: rgba(255,255,255,0.18); }
+.tab-icon-btn svg { width: 18px; height: 18px; stroke: rgba(255,255,255,0.8); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ════════════════════════════════
+   SHARED EXPENSE LIST ROW
+════════════════════════════════ */
+.exp-list { display: flex; flex-direction: column; }
+.exp-item {
+  display: flex; align-items: center; gap: 0.85rem;
+  padding: 0.95rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--warm-wh);
+  cursor: pointer;
+  transition: background 0.12s;
+  position: relative;
+}
+.exp-item:last-child { border-bottom: none; }
+.exp-item:hover { background: var(--stone-lt); }
+.exp-status-bar {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 0 2px 2px 0;
+}
+.exp-status-bar.sent     { background: var(--stone-md); }
+.exp-status-bar.approved { background: #3BAA6E; }
+.exp-status-bar.draft    { background: var(--clay); }
+.exp-icon {
+  width: 38px; height: 38px; border-radius: var(--radius-sm);
+  background: var(--stone-lt); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.exp-icon svg { width: 20px; height: 20px; stroke: var(--stone-md); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.exp-info { flex: 1; min-width: 0; }
+.exp-status-label { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.05em; color: var(--stone-md); }
+.exp-name { font-size: 0.93rem; font-weight: 500; color: var(--stone); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exp-name.light { font-weight: 400; color: var(--stone-md); }
+.exp-right { text-align: right; flex-shrink: 0; }
+.exp-date { font-size: 0.7rem; color: var(--stone-md); display: flex; align-items: center; gap: 3px; justify-content: flex-end; }
+.exp-date svg { width: 12px; height: 12px; stroke: var(--stone-md); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.exp-amount { font-size: 0.93rem; font-weight: 600; color: var(--stone); margin-top: 2px; }
+.exp-amount span { font-weight: 400; font-size: 0.78rem; color: var(--stone-md); }
+
+/* ════════════════════════════════
+   HOME / CREATE TAB
+════════════════════════════════ */
+#page-home { background: var(--cream); }
+
+.home-top { padding: 3.5rem 1.5rem 1.5rem; }
+.home-greeting { font-size: 0.75rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--stone-md); margin-bottom: 0.3rem; }
+.home-title { font-family: 'DM Serif Display', serif; font-size: 2rem; letter-spacing: -0.02em; color: var(--stone); line-height: 1.15; }
+
+.home-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding: 0 1.5rem 1.5rem; }
+.summary-card { background: var(--warm-wh); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.2rem; }
+.summary-card.accent { background: var(--stone); border-color: transparent; }
+.sc-label { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--stone-md); margin-bottom: 0.35rem; }
+.summary-card.accent .sc-label { color: rgba(255,255,255,0.45); }
+.sc-value { font-family: 'DM Serif Display', serif; font-size: 1.5rem; letter-spacing: -0.02em; color: var(--stone); }
+.summary-card.accent .sc-value { color: #fff; }
+.sc-sub { font-size: 0.72rem; color: var(--stone-md); margin-top: 0.15rem; }
+.summary-card.accent .sc-sub { color: rgba(255,255,255,0.4); }
+
+.home-actions { padding: 0 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+.action-row { display: grid; grid-template-columns: 1fr auto; gap: 0.75rem; align-items: stretch; }
+.action-main {
+  background: var(--stone); border: none; border-radius: var(--radius);
+  padding: 1.2rem 1.4rem; display: flex; align-items: center; gap: 0.85rem;
+  cursor: pointer; text-align: left; position: relative; overflow: hidden;
+  transition: background 0.15s, transform 0.1s;
+}
+.action-main::after { content:''; position:absolute; top:-30px; right:-30px; width:90px; height:90px; border-radius:50%; background:rgba(200,89,58,0.12); pointer-events:none; }
+.action-main:hover  { background: #3a3830; }
+.action-main:active { transform: scale(0.98); }
+.action-main.km { background: var(--clay); }
+.action-main.km::after { background: rgba(255,255,255,0.08); }
+.action-main.km:hover { background: var(--clay-dk); }
+.action-icon-wrap { width:40px; height:40px; border-radius:var(--radius-sm); background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.action-icon-wrap svg { width:22px; height:22px; stroke:#fff; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.action-label { font-family:'DM Serif Display',serif; font-size:1.15rem; color:#fff; letter-spacing:-0.01em; }
+.action-sub { font-size:0.72rem; color:rgba(255,255,255,0.5); margin-top:2px; }
+.action-fav {
+  background: var(--warm-wh); border: 1px solid var(--border); border-radius: var(--radius);
+  width: 60px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s; flex-shrink: 0;
+}
+.action-fav:hover { background: var(--stone-lt); }
+.action-fav svg { width:22px; height:22px; stroke:var(--stone-md); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ════════════════════════════════
+   ÅPEN TAB
+════════════════════════════════ */
+#page-open { background: var(--cream); }
+.open-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; gap: 0.75rem; text-align: center; }
+.open-empty svg { width: 48px; height: 48px; stroke: var(--clay-mid); fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.open-empty-title { font-family: 'DM Serif Display', serif; font-size: 1.2rem; color: var(--stone); }
+.open-empty-sub { font-size: 0.85rem; color: var(--stone-md); }
+
+/* draft badge */
+.draft-badge {
+  font-size: 0.62rem; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--clay);
+  background: var(--clay-lt); border-radius: 4px;
+  padding: 2px 6px; display: inline-block; margin-top: 3px;
+}
+
+/* ════════════════════════════════
+   HISTORIKK TAB
+════════════════════════════════ */
+#page-history { background: var(--cream); }
+
+/* ════════════════════════════════
+   EXPENSE FORM PAGE
+════════════════════════════════ */
+#page-form { background: var(--cream); }
+.form-shell { width: 100%; max-width: 480px; margin: 0 auto; padding: 3rem 1rem 4rem; }
+
+.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:2.5rem; }
+.header-back { width:40px; height:40px; border-radius:50%; border:1.5px solid var(--border); background:var(--warm-wh); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background 0.15s; }
+.header-back:hover { background: var(--stone-lt); }
+.header-back svg { width:18px; height:18px; stroke:var(--stone); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.header-title { font-family:'DM Serif Display',serif; font-size:1.35rem; color:var(--stone); }
+.header-save { background:var(--clay); color:#fff; border:none; border-radius:20px; padding:0.45rem 1.15rem; font-family:'DM Sans',sans-serif; font-size:0.85rem; font-weight:500; cursor:pointer; transition:background 0.15s; }
+.header-save:hover { background: var(--clay-dk); }
+
+.amount-card { background:var(--stone); border-radius:var(--radius); padding:2rem 1.75rem 1.75rem; margin-bottom:1.25rem; position:relative; overflow:hidden; }
+.amount-card::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; border-radius:50%; background:rgba(200,89,58,0.18); pointer-events:none; }
+.amount-card::after  { content:''; position:absolute; bottom:-50px; left:20px; width:100px; height:100px; border-radius:50%; background:rgba(200,89,58,0.1); pointer-events:none; }
+.amount-label { font-size:0.75rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--stone-md); margin-bottom:0.6rem; }
+.amount-row { display:flex; align-items:center; gap:0.5rem; margin-bottom:1.25rem; }
+.currency-badge { font-size:1rem; font-weight:500; color:var(--clay-mid); background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); border-radius:var(--radius-sm); padding:0.3rem 0.65rem; cursor:pointer; white-space:nowrap; position:relative; display:flex; align-items:center; gap:4px; transition:background 0.15s; }
+.currency-badge:hover { background:rgba(255,255,255,0.14); }
+.currency-badge svg { width:12px; height:12px; stroke:var(--clay-mid); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+#amount-input { flex:1; background:transparent; border:none; outline:none; font-family:'DM Serif Display',serif; font-size:2.8rem; color:#fff; letter-spacing:-0.03em; caret-color:var(--clay); min-width:0; }
+#amount-input::placeholder { color:rgba(255,255,255,0.2); }
+.amount-divider { border:none; border-top:1px solid rgba(255,255,255,0.08); margin-bottom:1rem; }
+.quick-actions { display:flex; gap:0.75rem; }
+.qa-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:var(--radius-sm); padding:0.6rem 0.25rem 0.55rem; cursor:pointer; transition:background 0.15s; color:rgba(255,255,255,0.7); font-size:0.65rem; font-family:'DM Sans',sans-serif; letter-spacing:0.03em; }
+.qa-btn:hover { background:rgba(255,255,255,0.12); color:#fff; }
+.qa-btn svg { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+
+.fields-card { background:var(--warm-wh); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; margin-bottom:1.25rem; }
+.field-row { display:flex; align-items:center; padding:1rem 1.25rem; border-bottom:1px solid var(--border); gap:0.75rem; cursor:pointer; transition:background 0.12s; }
+.field-row:last-child { border-bottom:none; }
+.field-row:hover { background:var(--stone-lt); }
+.field-row.active { background:var(--clay-lt); }
+.field-icon { width:34px; height:34px; border-radius:var(--radius-sm); background:var(--stone-lt); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 0.12s; }
+.field-row.active .field-icon { background:var(--clay-mid); }
+.field-icon svg { width:18px; height:18px; stroke:var(--stone-md); fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.field-row.active .field-icon svg { stroke:var(--clay-dk); }
+.field-text { flex:1; min-width:0; }
+.field-label { font-size:0.7rem; font-weight:500; letter-spacing:0.07em; text-transform:uppercase; color:var(--stone-md); margin-bottom:2px; }
+.field-value { font-size:0.95rem; color:rgba(44,42,38,0.3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.field-row.has-value .field-value { color:var(--stone); }
+.field-arrow svg { width:16px; height:16px; stroke:rgba(44,42,38,0.25); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.field-tick { display:none; }
+.field-tick svg { width:18px; height:18px; stroke:var(--clay); fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+.field-row.has-value .field-arrow { display:none; }
+.field-row.has-value .field-tick  { display:flex; }
+.field-input-wrap { display:none; padding:0.5rem 1.25rem 1rem; background:var(--clay-lt); border-bottom:1px solid rgba(200,89,58,0.15); flex-direction:column; gap:0.5rem; }
+.field-input-wrap.open { display:flex; }
+.field-input-wrap input, .field-input-wrap select { width:100%; background:var(--warm-wh); border:1.5px solid var(--clay-mid); border-radius:var(--radius-sm); padding:0.65rem 0.9rem; font-family:'DM Sans',sans-serif; font-size:0.95rem; color:var(--stone); outline:none; transition:border-color 0.15s, box-shadow 0.15s; appearance:none; -webkit-appearance:none; }
+.field-input-wrap input:focus, .field-input-wrap select:focus { border-color:var(--clay); box-shadow:0 0 0 3px rgba(200,89,58,0.12); }
+
+.optional-card { background:var(--warm-wh); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; margin-bottom:1.5rem; }
+.section-label { font-size:0.7rem; font-weight:500; letter-spacing:0.09em; text-transform:uppercase; color:var(--stone-md); padding:0.8rem 1.25rem 0.5rem; }
+.submit-btn { width:100%; background:var(--clay); color:#fff; border:none; border-radius:var(--radius); padding:1.05rem; font-family:'DM Serif Display',serif; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.6rem; transition:background 0.15s, transform 0.1s; box-shadow:0 4px 20px rgba(200,89,58,0.25); }
+.submit-btn:hover  { background:var(--clay-dk); }
+.submit-btn:active { transform:scale(0.98); }
+.submit-btn svg { width:20px; height:20px; stroke:rgba(255,255,255,0.8); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+.currency-menu { display:none; position:absolute; top:calc(100% + 6px); left:0; background:var(--stone); border:1px solid rgba(255,255,255,0.12); border-radius:var(--radius-sm); overflow:hidden; z-index:10; min-width:90px; box-shadow:0 8px 24px rgba(0,0,0,0.35); }
+.currency-menu.open { display:block; }
+.currency-opt { padding:0.5rem 0.9rem; font-size:0.85rem; color:rgba(255,255,255,0.8); cursor:pointer; transition:background 0.1s; font-weight:500; }
+.currency-opt:hover { background:rgba(255,255,255,0.1); }
+.currency-opt.selected { color:var(--clay-mid); }
+
+/* Toast */
+.toast { position:fixed; bottom:calc(var(--nav-h) + 0.75rem); left:50%; transform:translateX(-50%) translateY(40px); background:var(--stone); color:#fff; padding:0.75rem 1.5rem; border-radius:40px; font-size:0.9rem; opacity:0; transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s; pointer-events:none; white-space:nowrap; z-index:999; }
+.toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- ════════ PAGE: HOME / OPPRETT ════════ -->
+<div id="page-home" class="page visible">
+  <div class="home-top">
+    <div class="home-greeting">Good morning</div>
+    <div class="home-title">My Expenses</div>
+  </div>
+  <div class="home-summary">
+    <div class="summary-card accent">
+      <div class="sc-label">This month</div>
+      <div class="sc-value">4 820</div>
+      <div class="sc-sub">NOK submitted</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">Pending</div>
+      <div class="sc-value">2</div>
+      <div class="sc-sub">awaiting approval</div>
+    </div>
+  </div>
+  <div class="home-actions">
+    <div class="action-row">
+      <button class="action-main" id="btn-new-expense">
+        <div class="action-icon-wrap"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+        <div><div class="action-label">New Expense</div><div class="action-sub">Log a cost or purchase</div></div>
+      </button>
+      <button class="action-fav" title="Favourite templates">
+        <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><polygon points="12,13 13.5,11 15,13 13,14.5 11,13" stroke-width="1.2"/></svg>
+      </button>
+    </div>
+    <div class="action-row">
+      <button class="action-main km">
+        <div class="action-icon-wrap"><svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v7a2 2 0 0 1-2 2h-2"/><circle cx="9" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M14 3v4h5"/></svg></div>
+        <div><div class="action-label">New Mileage</div><div class="action-sub">Log kilometres driven</div></div>
+      </button>
+      <button class="action-fav" title="Favourite mileage templates">
+        <svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v7a2 2 0 0 1-2 2h-2"/><circle cx="9" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M14 3v4h5"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PAGE: ÅPEN ════════ -->
+<div id="page-open" class="page hidden-right">
+  <div class="tab-header">
+    <div class="tab-header-title">Åpen</div>
+    <div class="tab-header-actions">
+      <button class="tab-icon-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+      <button class="tab-icon-btn"><svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg></button>
+    </div>
+  </div>
+  <div class="exp-list">
+    <!-- draft items — these are expenses started but not yet submitted -->
+    <div class="exp-item" onclick="goToForm()">
+      <div class="exp-status-bar draft"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-name">Lunsj Oslo Kommune</div>
+        <span class="draft-badge">Draft</span>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>22.05.2026</div>
+        <div class="exp-amount">129,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item" onclick="goToForm()">
+      <div class="exp-status-bar draft"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-name">Bankett HKS dessert</div>
+        <span class="draft-badge">Draft</span>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>09.05.2026</div>
+        <div class="exp-amount">366,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item" onclick="goToForm()">
+      <div class="exp-status-bar draft"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-name">Lunsj Oslo Kommune</div>
+        <span class="draft-badge">Draft</span>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>05.05.2026</div>
+        <div class="exp-amount">105,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item" onclick="goToForm()">
+      <div class="exp-status-bar draft"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-name exp-name" style="font-weight:400;color:var(--stone-md)">Lunsj Oslo Kommune</div>
+        <span class="draft-badge">Draft</span>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>25.02.2026</div>
+        <div class="exp-amount">105,00 <span>NOK</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PAGE: HISTORIKK ════════ -->
+<div id="page-history" class="page hidden-right">
+  <div class="tab-header">
+    <div class="tab-header-title">Historikk</div>
+    <div class="tab-header-actions">
+      <button class="tab-icon-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+      <button class="tab-icon-btn"><svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg></button>
+    </div>
+  </div>
+  <div class="exp-list">
+    <div class="exp-item">
+      <div class="exp-status-bar sent"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-status-label">Sendt</div>
+        <div class="exp-name">Lunsj Oslo Kommune</div>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>28.05.2026</div>
+        <div class="exp-amount">118,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item">
+      <div class="exp-status-bar sent"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-status-label">Sendt</div>
+        <div class="exp-name light">Workout app membership fee - 1…</div>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>11.05.2026</div>
+        <div class="exp-amount">400,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item">
+      <div class="exp-status-bar sent"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-status-label">Sendt</div>
+        <div class="exp-name">Workout app membership fee -…</div>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>11.02.2026</div>
+        <div class="exp-amount">400,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item">
+      <div class="exp-status-bar approved"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-status-label">Godkjent</div>
+        <div class="exp-name">Lunsj Oslo Kommune</div>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>21.05.2026</div>
+        <div class="exp-amount">125,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item">
+      <div class="exp-status-bar approved"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-status-label">Godkjent</div>
+        <div class="exp-name">Lunsj Oslo Kommune</div>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>20.05.2026</div>
+        <div class="exp-amount">107,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item">
+      <div class="exp-status-bar approved"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-status-label">Godkjent</div>
+        <div class="exp-name">Lunsj Oslo Kommune</div>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>19.05.2026</div>
+        <div class="exp-amount">105,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item">
+      <div class="exp-status-bar approved"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-status-label">Godkjent</div>
+        <div class="exp-name light">Workout app membership fee - 1…</div>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>19.05.2026</div>
+        <div class="exp-amount">400,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item">
+      <div class="exp-status-bar approved"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-status-label">Godkjent</div>
+        <div class="exp-name">Lunsj Oslo Kommune</div>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>13.05.2026</div>
+        <div class="exp-amount">85,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item">
+      <div class="exp-status-bar approved"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-status-label">Godkjent</div>
+        <div class="exp-name">Lunsj Oslo Kommune</div>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>12.05.2026</div>
+        <div class="exp-amount">104,00 <span>NOK</span></div>
+      </div>
+    </div>
+    <div class="exp-item">
+      <div class="exp-status-bar approved"></div>
+      <div class="exp-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <div class="exp-info">
+        <div class="exp-status-label">Godkjent</div>
+        <div class="exp-name">Lunsj Oslo Kommune</div>
+      </div>
+      <div class="exp-right">
+        <div class="exp-date"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49"/></svg>09.05.2026</div>
+        <div class="exp-amount">97,00 <span>NOK</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PAGE: EXPENSE FORM ════════ -->
+<div id="page-form" class="page hidden-right">
+<div class="form-shell">
+  <header class="header">
+    <button class="header-back" id="back-btn" aria-label="Go back">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="header-title">New Expense</span>
+    <button class="header-save" id="save-btn">Save draft</button>
+  </header>
+
+  <div class="amount-card">
+    <div class="amount-label">Total Amount *</div>
+    <div class="amount-row">
+      <div class="currency-badge" id="currency-toggle" role="button" tabindex="0" aria-label="Select currency">
+        <span id="currency-label">NOK</span>
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        <div class="currency-menu" id="currency-menu">
+          <div class="currency-opt selected" data-val="NOK">NOK</div>
+          <div class="currency-opt" data-val="USD">USD</div>
+          <div class="currency-opt" data-val="EUR">EUR</div>
+          <div class="currency-opt" data-val="GBP">GBP</div>
+          <div class="currency-opt" data-val="SEK">SEK</div>
+          <div class="currency-opt" data-val="DKK">DKK</div>
+        </div>
+      </div>
+      <input id="amount-input" type="number" inputmode="decimal" placeholder="0.00" min="0" step="0.01" aria-label="Amount" />
+    </div>
+    <hr class="amount-divider" />
+    <div class="quick-actions">
+      <button class="qa-btn"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg>Receipt</button>
+      <button class="qa-btn"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Photo</button>
+      <button class="qa-btn"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>Attach</button>
+      <button class="qa-btn"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Template</button>
+    </div>
+  </div>
+
+  <div class="fields-card">
+    <div class="field-row" id="row-type" role="button" tabindex="0" aria-expanded="false">
+      <div class="field-icon"><svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="2"/></svg></div>
+      <div class="field-text"><div class="field-label">Expense Type *</div><div class="field-value" id="val-type">Select a category</div></div>
+      <div class="field-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="field-tick"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+    <div class="field-input-wrap" id="inp-type">
+      <select id="select-type"><option value="">— choose type —</option><option>Lunch</option><option>Dinner</option><option>Travel</option><option>Accommodation</option><option>Office supplies</option><option>Software / SaaS</option><option>Client entertainment</option><option>Training / courses</option><option>Other</option></select>
+    </div>
+
+    <div class="field-row" id="row-date" role="button" tabindex="0" aria-expanded="false">
+      <div class="field-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="field-text"><div class="field-label">Date *</div><div class="field-value" id="val-date">Select date</div></div>
+      <div class="field-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="field-tick"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+    <div class="field-input-wrap" id="inp-date">
+      <input type="date" id="input-date" aria-label="Expense date" />
+    </div>
+
+    <div class="field-row" id="row-desc" role="button" tabindex="0" aria-expanded="false">
+      <div class="field-icon"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg></div>
+      <div class="field-text"><div class="field-label">Description</div><div class="field-value" id="val-desc">Add a short note</div></div>
+      <div class="field-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="field-tick"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+    <div class="field-input-wrap" id="inp-desc">
+      <input type="text" id="input-desc" placeholder="e.g. Team lunch at Aker Brygge" maxlength="120" />
+    </div>
+  </div>
+
+  <div class="optional-card">
+    <div class="section-label">Optional details</div>
+    <div class="field-row" id="row-att" role="button" tabindex="0" aria-expanded="false">
+      <div class="field-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
+      <div class="field-text"><div class="field-label">Attendees</div><div class="field-value" id="val-att">Initials, separated by commas</div></div>
+      <div class="field-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="field-tick"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+    <div class="field-input-wrap" id="inp-att">
+      <input type="text" id="input-att" placeholder="e.g. AB, CD, EF" />
+    </div>
+
+    <div class="field-row" id="row-country" role="button" tabindex="0" aria-expanded="false">
+      <div class="field-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+      <div class="field-text"><div class="field-label">Country</div><div class="field-value" id="val-country">Where did this occur?</div></div>
+      <div class="field-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="field-tick"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+    <div class="field-input-wrap" id="inp-country">
+      <select id="select-country"><option value="">— select country —</option><option selected>Norway</option><option>Sweden</option><option>Denmark</option><option>Finland</option><option>Germany</option><option>France</option><option>United Kingdom</option><option>United States</option><option>Other</option></select>
+    </div>
+
+    <div class="field-row" id="row-comment" role="button" tabindex="0" aria-expanded="false">
+      <div class="field-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="field-text"><div class="field-label">Finance comment</div><div class="field-value" id="val-comment">Leave a note for finance</div></div>
+      <div class="field-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="field-tick"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+    <div class="field-input-wrap" id="inp-comment">
+      <input type="text" id="input-comment" placeholder="e.g. Client meeting, reimbursable" maxlength="160" />
+    </div>
+  </div>
+
+  <button class="submit-btn" id="submit-btn">
+    Submit expense
+    <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  </button>
+</div>
+</div>
+
+<!-- ════════ FIXED BOTTOM NAV ════════ -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="nav-item" id="nav-open" onclick="switchTab('open')">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
+    <span class="nav-label">Åpen</span>
+  </button>
+  <div class="nav-create-wrap">
+    <button class="nav-create" id="nav-create-btn" onclick="goToForm()">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <span class="nav-create-label">Opprett</span>
+  </div>
+  <button class="nav-item" id="nav-history" onclick="switchTab('history')">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+    <span class="nav-label">Historikk</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ══ Tab / page state ══ */
+let currentTab = 'open'; // start on Åpen
+
+const TAB_PAGES = { open: 'page-open', history: 'page-history' };
+
+function switchTab(tab) {
+  if (currentTab === tab) return;
+  const prev = currentTab;
+  currentTab = tab;
+
+  const order = ['open', 'history'];
+  const goRight = order.indexOf(tab) > order.indexOf(prev);
+
+  Object.entries(TAB_PAGES).forEach(([key, pageId]) => {
+    const el = document.getElementById(pageId);
+    el.classList.remove('visible','hidden-left','hidden-right');
+    if (key === tab) {
+      el.classList.add('visible');
+    } else {
+      el.classList.add(goRight ? 'hidden-left' : 'hidden-right');
+    }
+  });
+
+  // also hide home if visible
+  const home = document.getElementById('page-home');
+  home.classList.remove('visible'); home.classList.add('hidden-left');
+
+  // update nav active state
+  document.getElementById('nav-open').classList.toggle('active', tab === 'open');
+  document.getElementById('nav-history').classList.toggle('active', tab === 'history');
+}
+
+function goToForm() {
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('visible','hidden-left','hidden-right');
+    p.classList.add('hidden-left');
+  });
+  const form = document.getElementById('page-form');
+  form.classList.remove('hidden-left','hidden-right');
+  form.classList.add('visible');
+  document.getElementById('bottom-nav').style.display = 'none';
+}
+
+function goBack() {
+  document.getElementById('bottom-nav').style.display = '';
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('visible','hidden-left','hidden-right');
+    p.classList.add('hidden-right');
+  });
+  // restore current tab
+  const activePageId = TAB_PAGES[currentTab];
+  document.getElementById(activePageId).classList.remove('hidden-right');
+  document.getElementById(activePageId).classList.add('visible');
+}
+
+// Start on Åpen tab
+switchTab('open');
+
+document.getElementById('btn-new-expense') && document.getElementById('btn-new-expense').addEventListener('click', goToForm);
+document.getElementById('back-btn').addEventListener('click', goBack);
+
+/* ══ Form logic ══ */
+const state = { amount:'', currency:'NOK', type:'', date:'', desc:'', att:'', country:'', comment:'' };
+
+const fields = [
+  { id:'type',    row:'row-type',    inp:'inp-type',    val:'val-type',    get:() => document.getElementById('select-type').value },
+  { id:'date',    row:'row-date',    inp:'inp-date',    val:'val-date',    get:() => formatDate(document.getElementById('input-date').value) },
+  { id:'desc',    row:'row-desc',    inp:'inp-desc',    val:'val-desc',    get:() => document.getElementById('input-desc').value.trim() },
+  { id:'att',     row:'row-att',     inp:'inp-att',     val:'val-att',     get:() => document.getElementById('input-att').value.trim() },
+  { id:'country', row:'row-country', inp:'inp-country', val:'val-country', get:() => document.getElementById('select-country').value },
+  { id:'comment', row:'row-comment', inp:'inp-comment', val:'val-comment', get:() => document.getElementById('input-comment').value.trim() },
+];
+
+function formatDate(v) {
+  if (!v) return '';
+  const d = new Date(v + 'T00:00:00');
+  return d.toLocaleDateString('en-NO', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+}
+
+function applyField(fieldId) {
+  const f = fields.find(x => x.id === fieldId);
+  const val = f.get();
+  if (!val) return;
+  state[fieldId] = val;
+  document.getElementById(f.val).textContent = val;
+  document.getElementById(f.row).classList.add('has-value');
+  document.getElementById(f.inp).classList.remove('open');
+  document.getElementById(f.row).classList.remove('active');
+  document.getElementById(f.row).setAttribute('aria-expanded','false');
+}
+
+function closeAll(except) {
+  fields.forEach(f => {
+    if (f.id === except) return;
+    document.getElementById(f.inp).classList.remove('open');
+    document.getElementById(f.row).classList.remove('active');
+    document.getElementById(f.row).setAttribute('aria-expanded','false');
+  });
+}
+
+fields.forEach(f => {
+  const row = document.getElementById(f.row);
+  const inp = document.getElementById(f.inp);
+  function toggle() {
+    const isOpen = inp.classList.contains('open');
+    closeAll(isOpen ? '' : f.id);
+    inp.classList.toggle('open', !isOpen);
+    row.classList.toggle('active', !isOpen);
+    row.setAttribute('aria-expanded', String(!isOpen));
+    if (!isOpen) { const el = inp.querySelector('input,select'); if (el) setTimeout(() => el.focus(), 50); }
+  }
+  row.addEventListener('click', toggle);
+  row.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); toggle(); } });
+  const sel = inp.querySelector('select');
+  if (sel) sel.addEventListener('change', () => applyField(f.id));
+  const dateEl = inp.querySelector('input[type="date"]');
+  if (dateEl) dateEl.addEventListener('change', () => applyField(f.id));
+  const txt = inp.querySelector('input[type="text"]');
+  if (txt) {
+    txt.addEventListener('blur', () => { if (txt.value.trim()) applyField(f.id); });
+    txt.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); applyField(f.id); } });
+  }
+});
+
+document.getElementById('amount-input').addEventListener('input', e => { state.amount = e.target.value; });
+
+const currencyToggle = document.getElementById('currency-toggle');
+const currencyMenu   = document.getElementById('currency-menu');
+currencyToggle.addEventListener('click', e => { e.stopPropagation(); currencyMenu.classList.toggle('open'); });
+document.querySelectorAll('.currency-opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('.currency-opt').forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+    state.currency = opt.dataset.val;
+    document.getElementById('currency-label').textContent = opt.dataset.val;
+    currencyMenu.classList.remove('open');
+  });
+});
+document.addEventListener('click', () => currencyMenu.classList.remove('open'));
+
+document.getElementById('save-btn').addEventListener('click', () => showToast('Draft saved ✓'));
+
+document.getElementById('submit-btn').addEventListener('click', () => {
+  if (!state.amount || parseFloat(state.amount) <= 0) { showToast('Please enter an amount.'); return; }
+  if (!state.type)  { showToast('Expense type is required.'); return; }
+  if (!state.date)  { showToast('Date is required.'); return; }
+  showToast('Expense submitted! ✓');
+  setTimeout(() => goBack(), 1200);
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>
